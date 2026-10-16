@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f2e9">
+  <meta name="description" content="Sneak into Babushka’s basement, steal her compotes, and stay one step ahead. A free pixel-art arcade survival game.">
+  <title>Compote Stealer — A little basement mischief</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./src/main.js"></script>
+</head>
+<body>
+  <div class="site-wrap">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Compote Stealer home"><span class="brand-mark" aria-hidden="true"><span class="jar jar-cherry"></span></span> COMPOTE<span class="brand-light">STEALER</span></a>
+      <nav aria-label="Main navigation"><button class="nav-link" id="how-button">How to play <span>↗</span></button><button class="nav-link" id="scores-button">High scores <span>↗</span></button><button class="sound-button" id="sound-button" aria-label="Turn sound on" aria-pressed="false"><span aria-hidden="true">♪</span><span id="sound-label">Sound off</span></button></nav>
+    </header>
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div><p class="eyebrow"><span class="live-dot"></span> A SMALL GAME. A VERY ANGRY BABUSHKA.</p><h1 id="page-title">Compote <span>Stealer</span><span class="title-dot">.</span></h1><p class="intro-copy">Her basement. Her compotes. Your questionable life choices.</p></div>
+        <div class="intro-stamp"><span class="stamp-star">✳</span><span>HOMEMADE COMPOTE<br><strong>UNAUTHORIZED TASTING</strong></span></div>
+      </section>
+      <div class="play-layout">
+        <section class="game-card" aria-label="Compote Stealer game">
+          <div class="game-toolbar"><span class="basement-label"><span class="live-dot"></span> <span id="level-label">BASEMENT 01</span></span><span class="game-status" id="status-label">THE PANTRY</span><button id="pause-button" class="icon-button" aria-label="Pause game" disabled>Ⅱ</button></div>
+          <div class="game-hud"><div><span class="hud-label">YOUR HAUL</span><strong id="score">00000</strong></div><div class="timer-wrap"><span class="hud-label">TIME LEFT</span><strong id="timer">0:45</strong></div><div class="lives-wrap"><span class="hud-label">LIVES</span><span id="lives" class="lives" aria-label="3 lives">♥ ♥ ♥</span></div></div>
+          <div class="game-stage" id="game-stage">
+            <canvas id="game" width="960" height="600" tabindex="0" aria-label="Basement game. Move with arrow keys or WASD, hold Space to sprint, and press P to pause."></canvas>
+            <div class="stage-overlay" id="overlay">
+              <div class="start-content" id="start-panel"><span class="mini-tag">A LITTLE BASEMENT HEIST</span><div class="splash-jar" aria-hidden="true"><span class="jar jar-cherry"></span><span class="spark s1">✦</span><span class="spark s2">✧</span></div><h2>Sweet loot.<br>Sour consequences.</h2><p>Grab the compotes. Dodge Babushka.<br>Try to make it out with your dignity.</p><button id="start-button" class="primary-button">Let’s steal some compote <span>→</span></button><span class="start-hint">KEYBOARD OR TOUCH · THREE LIVES · ENDLESS BASEMENTS</span></div>
+              <div id="dynamic-panel" class="dynamic-panel" hidden></div>
+            </div>
+            <div class="game-toast" id="game-toast" role="status" aria-live="polite"></div>
+          </div>
+          <div class="game-footer"><span><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span><span class="control-label">or arrow keys</span></span><span class="sprint-indicator"><span class="key space-key">SPACE</span> Sprint <span class="energy-track"><span id="energy"></span></span></span><span class="pause-hint"><span class="key">P</span> Pause</span></div>
+          <div class="touch-controls" aria-label="Touch controls"><div class="dpad"><button data-direction="up" aria-label="Move up">↑</button><button data-direction="left" aria-label="Move left">←</button><button data-direction="down" aria-label="Move down">↓</button><button data-direction="right" aria-label="Move right">→</button></div><button id="touch-sprint">HOLD TO<br><strong>SPRINT</strong></button></div>
+        </section>
+        <aside class="sidebar">
+          <section class="record-card"><div class="section-kicker"><span>THE ONE TO BEAT</span><span aria-hidden="true">⚑</span></div><strong id="best-score">0<span>PTS</span></strong><p>Your personal best. For now.</p><button id="record-button">View high scores <span>↗</span></button></section>
+          <section class="mission-card"><span class="section-kicker">YOUR VERY IMPORTANT MISSION</span><h2>Get rich.<br>In compote.</h2><p>Every jar counts. Every basement gets trickier. Stay alive until the timer runs out to go deeper.</p><div class="mission-divider"></div><div class="character-line"><span class="portrait kid-portrait" aria-hidden="true">●</span><div><strong>You, the little rascal</strong><span>Fast feet. Sticky fingers.</span></div></div><div class="character-line"><span class="portrait granny-portrait" aria-hidden="true">●</span><div><strong>Babushka</strong><span>She knows this basement.</span></div></div><p class="mission-note">Three lives. No hard feelings.<br><em>Okay, maybe some hard feelings.</em></p></section>
+          <div class="local-note"><span aria-hidden="true">◈</span> No account. Just compote.<br><span>High scores stay in this browser.</span></div>
+        </aside>
+      </div>
+      <section class="loot-section" aria-labelledby="loot-title"><div class="section-heading"><h2 id="loot-title">Know your loot<span>.</span></h2><p>Some jars are worth the trouble.</p></div><div class="loot-grid"><article class="loot-card cherry"><span class="jar jar-cherry" aria-hidden="true"></span><div><h3>Cherry</h3><p>The basement classic.</p></div><strong>10 <span>PTS</span></strong></article><article class="loot-card apricot"><span class="jar jar-apricot" aria-hidden="true"></span><div><h3>Apricot</h3><p>A little liquid sunshine.</p></div><strong>25 <span>PTS</span></strong></article><article class="loot-card plum"><span class="jar jar-plum" aria-hidden="true"></span><div><h3>Plum</h3><p>Worth a little detour.</p></div><strong>50 <span>PTS</span></strong></article><article class="loot-card golden"><span class="jar jar-golden" aria-hidden="true"></span><div><h3>Golden pear</h3><p>Babushka’s prized batch.</p></div><strong>100 <span>PTS</span></strong></article></div></section>
+      <div class="bottom-note"><span>✳</span> Made with love. Stolen with enthusiasm.<span class="bottom-right">ONE MORE JAR CAN’T HURT. RIGHT?</span></div>
+    </main>
+    <footer class="site-footer"><span>COMPOTE STEALER <span class="footer-slash">/</span> A basement arcade adventure</span><a href="https://github.com/mitzZzera/Compote_Stealer_Game" target="_blank" rel="noreferrer">Peek at the recipe <span>↗</span></a></footer>
+  </div>
+  <dialog id="info-dialog" aria-labelledby="dialog-title"><button class="dialog-close" id="dialog-close" aria-label="Close dialog">×</button><div id="dialog-content"></div></dialog>
+</body>
+</html>
