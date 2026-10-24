@@ -6,7 +6,11 @@ A little basement mischief. Play a young rascal stealing jars of compote while B
 
 ## Play
 
-- **Move:** WASD or arrow keys. Touch controls appear on touch devices.
+- **Choose your controls:** use the **Play your way** selector above the game. Keyboard and swipe preferences are remembered in this browser. Switching modes during a run pauses it so you can get comfortable before resuming.
+- **WASD / Arrows:** hold a key to move; release to stop.
+- **Swipe:** swipe up, down, left, or right on the basement to keep moving in that direction. Swipe again to turn. Tap the basement or press **Stop** to stop moving. Mouse drags also work.
+- **Tilt phone:** choose **Tilt phone**, allow motion access if asked, and hold the phone in a comfortable playing position while it calibrates. Tilt gently to move and return to the starting position to stop. Use **Recenter** whenever you need a new neutral position. Rotating the screen recalibrates automatically.
+- **Touch buttons:** the arrow buttons remain available as a fallback, and the Sprint button works with every mode.
 - **Sprint:** hold Space or the Sprint button; release to refill your stamina.
 - **Pause:** P, Escape, or the pause button. Leaving the tab pauses the chase automatically.
 - **Collect:** walk over jars. Cherry earns **10**, apricot **25**, plum **50**, and golden pear **100 points**.
@@ -16,6 +20,12 @@ A little basement mischief. Play a young rascal stealing jars of compote while B
 - **Save:** enter a name when a run ends and press **Save score**. You can also pause and choose **End run & save score**. The top ten scores are saved in your browser’s local storage.
 
 The leaderboard is local to each browser and device. It is not a shared online leaderboard. Clearing site data removes saved scores.
+
+### Phone tilt requirements
+
+Tilt uses the browser’s [Device Orientation API](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent/requestPermission_static). It requires HTTPS (as provided by Netlify) or localhost, a device with orientation sensors, and browser permission where required. A phone visiting a computer’s plain HTTP LAN address cannot use tilt; swipes still work. Motion readings stay on the device. Tilt is enabled only when the player chooses it; a saved preference never triggers a permission prompt on page load.
+
+If permission is denied, the API is unavailable, or no usable readings arrive within four seconds, the previous keyboard/swipe mode remains available with a helpful message. Stale readings stop movement. Physical phone calibration and sensitivity should still be playtested on the target iOS/Android browsers. For a cross-origin portfolio iframe, its parent must allow `accelerometer` and `gyroscope` access (for example, `allow="accelerometer; gyroscope"`); a normal link needs no extra setup.
 
 ## Run locally
 
@@ -54,6 +64,7 @@ style.css            Responsive layout, touch controls and CSS jar artwork
 src/engine.js        Game rules, collision, pathfinding and score persistence
 src/renderer.js      Original Canvas pixel artwork
 src/main.js          Browser input, dialogs, audio and frame loop
+src/controls.js      Keyboard/swipe selection, tilt permission and calibration
 scripts/             Static dev server and production build
 tests/               Game behavior and persistence tests
 netlify.toml         Netlify build and hosting configuration

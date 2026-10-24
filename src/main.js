@@ -1,13 +1,38 @@
 import { Game, BASEMENTS, readScores, saveScore } from './engine.js';
 import { render } from './renderer.js';
+import { MovementControls } from './controls.js';
 
 const $ = id => document.getElementById(id);
-const game = new Game(), ctx = $('game').getContext('2d'), keys = {};
+const game = new Game(), ctx = $('game').getContext('2d');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let storage;
 try { storage = localStorage; } catch { storage = { getItem: () => null, setItem: () => { throw new Error('Storage unavailable'); } }; }
 let scores = readScores(storage), soundOn = false, audio, lastState, toastTimer, resumedAfterDialog = false, saved = false;
 try { soundOn = storage.getItem('compote-sound') === 'on'; } catch { /* Sound defaults off. */ }
+const controls = new MovementControls({ surface: $('game'), storage, canPlay: () => game.state === 'playing' && !$('info-dialog').open, onChange: renderControls });
+function renderControls({ mode, pending, hint }) {
+  document.querySelector('.game-card').dataset.controlMode = mode;
+  for (const button of document.querySelectorAll('[data-mode]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
+    button.disabled = button.dataset.mode === 'tilt' && pending;
+    button.setAttribute('aria-busy', String(button.dataset.mode === 'tilt' && pending));
+  }
+  $('control-hint').textContent = hint;
+  $('recenter-button').hidden = mode !== 'tilt' || pending;
+  $('start-button').disabled = pending;
+  if ($('resume-button')) $('resume-button').disabled = pending;
+  $('swipe-stop').hidden = mode !== 'swipe';
+  $('movement-hint').textContent = mode === 'keyboard' ? 'WASD / Arrows to move' : mode === 'swipe' ? 'Swipe to move · Tap to stop' : 'Tilt to move · Center to stop';
+  $('game').setAttribute('aria-label', `Basement game. ${hint} Press P to pause.`);
+}
+renderControls(controls.snapshot());
+for (const button of document.querySelectorAll('[data-mode]')) button.onclick = () => {
+  if (button.dataset.mode === controls.mode && !controls.pending) return;
+  if (['playing', 'transition'].includes(game.state)) { game.pause(); syncState(); }
+  controls.select(button.dataset.mode);
+};
+$('recenter-button').onclick = () => controls.recenter();
+$('swipe-stop').onclick = () => controls.stop();
 
 function sound(kind) {
   if (!soundOn) return;
@@ -26,10 +51,10 @@ $('sound-button').addEventListener('click',()=>{soundOn=!soundOn;updateSound();t
 function updateBest() { $('best-score').replaceChildren(document.createTextNode((scores[0]?.score||0).toLocaleString()),Object.assign(document.createElement('span'),{textContent:'PTS'})); }
 updateBest();
 function toast(message) { $('game-toast').textContent=message;$('game-toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('game-toast').classList.remove('show'),2200); }
-function clearKeys() { for(const key of Object.keys(keys)) keys[key]=false; }
-function start() {clearKeys();saved=false;game.newRun();syncState();$('game').focus({preventScroll:true});}
+function clearKeys() { controls.reset(); }
+function start() {if(controls.pending)return;clearKeys();saved=false;game.newRun();syncState();$('game').focus({preventScroll:true});}
 $('start-button').addEventListener('click',start);
-$('pause-button').addEventListener('click',()=>{if(game.state==='playing')game.pause();else if(game.state==='paused')game.resume();clearKeys();syncState();});
+$('pause-button').addEventListener('click',()=>{if(game.state==='playing')game.pause();else if(game.state==='paused'&&!controls.pending)game.resume();clearKeys();syncState();});
 function syncState() {
   if(lastState===game.state)return;
   lastState=game.state;
@@ -38,9 +63,10 @@ function syncState() {
   $('pause-button').disabled=!['playing','paused'].includes(game.state);
   $('pause-button').textContent=game.state==='paused'?'▶':'Ⅱ';$('pause-button').setAttribute('aria-label',game.state==='paused'?'Resume game':'Pause game');
   const panel=$('dynamic-panel');
+  clearKeys();
   if(game.state==='paused') {
     panel.innerHTML='<span class="mini-tag">TAKING A BREATHER</span><h2>She can wait.<br>For a minute.</h2><p>Your compotes are safe while you’re away.</p><button class="primary-button" id="resume-button">Back to the basement →</button><button class="secondary-button" id="end-button">End run & save score</button>';
-    $('resume-button').onclick=()=>{game.resume();clearKeys();syncState();$('game').focus({preventScroll:true});};
+    $('resume-button').onclick=()=>{if(controls.pending)return;game.resume();clearKeys();syncState();$('game').focus({preventScroll:true});};
     $('end-button').onclick=()=>{game.endRun();syncState();};
     $('resume-button').focus({preventScroll:true});
   } else if(game.state==='transition') {
@@ -60,21 +86,21 @@ const mappings={w:'up',arrowup:'up',a:'left',arrowleft:'left',s:'down',arrowdown
 window.addEventListener('keydown',e=>{
   if($('info-dialog').open || /INPUT|TEXTAREA/.test(e.target.tagName))return;
   const key=e.key.toLowerCase();
-  if((key==='p'||key==='escape')&&!e.repeat){if(game.state==='playing')game.pause();else if(game.state==='paused')game.resume();clearKeys();syncState();}
-  if(mappings[key]&&game.state==='playing'){e.preventDefault();keys[mappings[key]]=true;}
+  if((key==='p'||key==='escape')&&!e.repeat){if(game.state==='playing')game.pause();else if(game.state==='paused'&&!controls.pending)game.resume();clearKeys();syncState();}
+  if(mappings[key]&&game.state==='playing'&&(controls.mode==='keyboard'||key===' ')){e.preventDefault();controls.keyboard[mappings[key]]=true;}
 });
-window.addEventListener('keyup',e=>{const key=mappings[e.key.toLowerCase()];if(key)keys[key]=false;});
+window.addEventListener('keyup',e=>{const key=mappings[e.key.toLowerCase()];if(key)controls.keyboard[key]=false;});
 function autoPause(){clearKeys();game.pause();syncState();}
 window.addEventListener('blur',autoPause);document.addEventListener('visibilitychange',()=>{if(document.hidden)autoPause();});
 for(const button of document.querySelectorAll('[data-direction],#touch-sprint')) {
   const key=button.dataset.direction||'sprint';
-  button.addEventListener('pointerdown',e=>{e.preventDefault();button.setPointerCapture(e.pointerId);keys[key]=true;});
-  for(const event of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(event,()=>keys[key]=false);
+  button.addEventListener('pointerdown',e=>{if(game.state!=='playing')return;e.preventDefault();button.setPointerCapture(e.pointerId);if(key!=='sprint')controls.stop();controls.buttons[key]=true;});
+  for(const event of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(event,()=>controls.buttons[key]=false);
   button.addEventListener('contextmenu',e=>e.preventDefault());
 }
 function openDialog(type) {
   resumedAfterDialog=['playing','transition'].includes(game.state);game.pause();clearKeys();syncState();
-  if(type==='how')$('dialog-content').innerHTML='<span class="section-kicker">A QUICK BRIEFING</span><h2 class="dialog-title" id="dialog-title">The art of compote theft.</h2><ol class="instructions"><li><strong>Keep moving.</strong> Use WASD or the arrow keys. On a phone, use the buttons under the game.</li><li><strong>Grab jars.</strong> Walk over compotes to collect them. Cherry: 10, apricot: 25, plum: 50, golden pear: 100 points.</li><li><strong>Dodge Babushka.</strong> Hold Space (or Sprint) for a burst of speed. Let go to recharge.</li><li><strong>Survive the timer.</strong> Each completed basement awards 100 × level bonus points and takes you deeper. Collect every jar for a 250-point refill bonus.</li><li><strong>Three lives, one haul.</strong> Getting caught costs a life. After losing all three, save your score and try again.</li></ol><p class="dialog-footnote">Press P or Escape to pause. Switching tabs pauses automatically. Scores are stored only in this browser; no account is needed.</p>';
+  if(type==='how')$('dialog-content').innerHTML='<span class="section-kicker">A QUICK BRIEFING</span><h2 class="dialog-title" id="dialog-title">The art of compote theft.</h2><ol class="instructions"><li><strong>Keep moving.</strong> Choose WASD / Arrows, Swipe, or Tilt phone above the game. Swipe on the basement to keep moving; tap to stop. For tilt, allow motion access if asked, hold your phone comfortably to set center, and use Recenter when needed. The arrow buttons remain available as a fallback.</li><li><strong>Grab jars.</strong> Walk over compotes to collect them. Cherry: 10, apricot: 25, plum: 50, golden pear: 100 points.</li><li><strong>Dodge Babushka.</strong> Hold Space (or Sprint) for a burst of speed. Let go to recharge.</li><li><strong>Survive the timer.</strong> Each completed basement awards 100 × level bonus points and takes you deeper. Collect every jar for a 250-point refill bonus.</li><li><strong>Three lives, one haul.</strong> Getting caught costs a life. After losing all three, save your score and try again.</li></ol><p class="dialog-footnote">Press P or Escape to pause. Switching tabs pauses automatically. Scores are stored only in this browser; no account is needed.</p>';
   else {
     $('dialog-content').innerHTML='<span class="section-kicker">THE COMPOTE HALL OF FAME</span><h2 class="dialog-title" id="dialog-title">Sticky fingers. Big scores.</h2><div id="score-list"></div><p class="dialog-footnote">Top 10 saved runs on this browser and device. Clearing site data clears these scores.</p>';
     const list=$('score-list');
@@ -90,7 +116,7 @@ $('how-button').onclick=()=>openDialog('how');$('scores-button').onclick=()=>ope
 $('info-dialog').addEventListener('click',e=>{if(e.target===$('info-dialog')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
 $('info-dialog').addEventListener('close',()=>{if(resumedAfterDialog)game.resume();resumedAfterDialog=false;syncState();});
 let previous=performance.now();
-function frame(now){const dt=Math.max(0,(now-previous)/1000);previous=now;game.update(dt,keys);
+function frame(now){const dt=Math.max(0,(now-previous)/1000);previous=now;game.update(dt,controls.read());
   for(const event of game.events.splice(0)){
     if(['collect','caught','complete','start'].includes(event.type))sound(event.type);
     if(event.type==='caught')toast(game.lives?'Caught! A life lost. Your haul is safe.':'Babushka caught you. Save your haul!');
